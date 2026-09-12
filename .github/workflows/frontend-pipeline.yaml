@@ -55,11 +55,13 @@ jobs:
        - name: checkout code
          uses: actions/checkout@v7
        - name: setup node
-         uses: action/setup-node@v6
+         uses: actions/setup-node@v6
          with:
            node-version: '22'
            cache: 'npm'
            cache-dependency-path: './package-lock.json'
+       - name: install dependencies
+         run: npm ci
        - name: Running test
          run: npm test -- --coverage --reporter=verbose || echo "No Test defines"
        - name: Upload Test Coverage Artifact
@@ -80,6 +82,8 @@ jobs:
          node-version: '22'
          cache: 'npm'
          cache-dependency-path: './package-lock.json'
+      - name: install dependencies
+        run: npm ci 
       - name: create build
         run: npm run build
       - name: upload to artifact
