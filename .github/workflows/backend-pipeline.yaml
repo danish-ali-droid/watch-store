@@ -1,0 +1,24 @@
+name: backend pipeline 
+on: 
+ push:
+   branches: [ main ]
+   paths:
+     - 'backend/**'
+     - '.github/workflows/backendpipeline.yaml'
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+permissions:
+   contents: write
+jobs:
+ check-syntax:
+   runs-on: ubuntu-latest
+   defaults:
+    run:
+     working-directory: ./backend
+   steps:
+     - name: checkout code
+       uses: actions/checkout@v7
+
+
+

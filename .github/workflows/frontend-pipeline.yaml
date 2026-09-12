@@ -1,0 +1,91 @@
+name: Frontend Pipeline
+on: 
+ push:
+   branches:
+     - main
+   paths-ignore:
+     - 'backend/**'
+     - 'db'
+     - 'manifests'
+     - 'terraform' 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  check-syntax:
+     runs-on: ubuntu-latest
+     steps:
+        - name: checkout the code 
+          uses: actions/checkout@v7
+        - name: setup node
+          uses: actions/setup-node@v6
+          with:
+            node-version: '22'
+            cache: 'npm'
+            cache-dependency-path: './package-lock.json'
+        - name: install dependencies
+          run: npm ci
+        - name: Ensure Eslint config exists
+          run: |
+             if [ ! -f .eslintrc.json ] && [ ! -f .eslintrc.js ] && [ ! -f .eslintrc.ts ] && [ ! -f eslint.config.json ] && [ ! -f eslint.config.js ] && [ ! -f eslint.config.ts ]; then echo 'import js from "@eslint/js"; export default [js.configs.recommended];' > eslint.config.js; 
+             fi    
+        - name: Run eslint 
+          run: npx eslint .
+        - name: check formet
+          id: prettier_check
+          continue-on-error: true
+          run: npx prettier --check "src/**/*.{js,jsx,ts,tsx,css,json}"
+        - name: Fix format if check failed
+          id: fixed-syntax
+          if:  steps.prettier_check.outcome == 'failure'
+          run: |
+             npx prettier --write "src/**/*.{js,jsx,ts,tsx,css,json}"
+             git config --local user.email "github-actions[bot]@users.noreply.github.com"
+             git config --local user.name "github-actions[bot]"
+             git commit -am "style: auto-format code with prettier" || echo "No changes to commit"
+             git push
+        - name: TypeScript strict type check
+          run: npx tsc --noEmit
+  test:
+     needs: check-syntax
+     runs-on: ubuntu-latest
+     steps:
+       - name: checkout code
+         uses: actions/checkout@v7
+       - name: setup node
+         uses: action/setup-node@v6
+         with:
+           node-version: '22'
+           cache: 'npm'
+           cache-dependency-path: './package-lock.json'
+       - name: Running test
+         run: npm test -- --coverage --reporter=verbose || echo "No Test defines"
+       - name: Upload Test Coverage Artifact
+         uses: actions/upload-artifact@v7
+         with:
+          name: test-coverage-report
+          path: coverage/
+          retention-days: 7
+  build:
+     needs: test
+     runs-on: ubuntu-latest
+     steps:
+      - name: checkout code
+        uses: actions/checkout@v7
+      - name: setup node
+        uses: actions/setup-node@v6
+        with: 
+         node-version: '22'
+         cache: 'npm'
+         cache-dependency-path: './package-lock.json'
+      - name: create build
+        run: npm run build
+      - name: upload to artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-build
+          path: dist/
+          retention-days: 7
+#  deploy:

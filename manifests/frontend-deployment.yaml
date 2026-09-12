@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: watch-app
+  labels:
+     app: frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata: 
+     name: frontend-rs 
+     labels:
+        app: frontend
+    spec: 
+     containers:
+       - name: frontend-container
+         image: 
+         ports:
+           - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: watch-app
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      targetPort: 80
+      port: 80
+
+
+
+
+

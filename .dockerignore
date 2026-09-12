@@ -1,0 +1,10 @@
+node_modules
+.git
+backend
+db
+terraform
+CHANGES_SUMMARY.md
+NODEMAILER_SETUP.md
+artitecture-diagram.jpeg
+README.md
+manifests

@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: watch-app
+  labels:
+    app: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+       app: backend
+  template:
+    metadata:
+      name: backend-rs
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend-container
+          image: 
+          ports:
+            - containerPort: 4000
+          envFrom:
+            - configMapRef:
+                name: watch-app-cm 
+            - secretRef: 
+                 name: watch-app-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: watch-app
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      targetPort: 4000
+      port: 4000
+
+
+
