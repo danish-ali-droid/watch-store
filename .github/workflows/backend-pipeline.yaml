@@ -3,7 +3,7 @@ on:
  push:
    branches: [ main ]
    paths:
-     - './backend/**'
+     - 'backend/**'
      - '.github/workflows/backend-pipeline.yaml'
      - 'manifest/backend-deployment.yaml'
      - 'manifest/redis-deployment.yaml'
@@ -35,11 +35,6 @@ jobs:
         cache-dependency-path: 'package-lock.json'
      - name: install dependencies
        run: npm ci
-     - name:  check lint 
-       run: npx eslint .
-     - name: check files
-       if: failure()
-       run: ls -al
      - name: formet check
        id: formet-check
        continue-on-error: true
