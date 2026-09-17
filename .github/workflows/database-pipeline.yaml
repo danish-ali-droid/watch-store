@@ -106,7 +106,7 @@ jobs:
 
           
              DB_HOST=$(echo $SECRET_JSON | jq -r '.DB_HOST')
-             DB_USER=$(echo $SECRET_JSON | jq -r '.DB_USER')
+             DB_USER=root
              DB_PASS=$(echo $SECRET_JSON | jq -r '.DB_PASSWORD')
              DB_NAME=watch_store
              DB_PORT=5432         

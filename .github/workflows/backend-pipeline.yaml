@@ -3,8 +3,7 @@ on:
  push:
    branches: [ main ]
    paths:
-     - 'backend'
-     - 'db'
+     - './backend/**'
      - '.github/workflows/backend-pipeline.yaml'
      - 'manifest/backend-deployment.yaml'
      - 'manifest/redis-deployment.yaml'
