@@ -7,7 +7,7 @@ metadata:
     app: watchstore
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
-    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/target-type: ip 
 spec:
   ingressClassName: nginx
   rules:

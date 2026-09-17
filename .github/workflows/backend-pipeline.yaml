@@ -5,9 +5,9 @@ on:
    paths:
      - 'backend/**'
      - '.github/workflows/backend-pipeline.yaml'
-     - 'manifest/backend-deployment.yaml'
-     - 'manifest/redis-deployment.yaml'
-     - 'manifest/ingress-resource.yaml'
+     - 'manifests/backend-deployment.yaml'
+     - 'manifests/redis-deployment.yaml'
+     - 'manifests/ingress-resource.yaml'
  workflow_dispatch:
  workflow_run:
     workflows: ["terraform"]   

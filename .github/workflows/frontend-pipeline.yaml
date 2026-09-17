@@ -7,12 +7,12 @@ on:
       - 'backend/**'
       - 'db/**'
       - 'terraform/**'
-      - '.github/workflows/backendend-pipeline.yaml'
+      - '.github/workflows/backend-pipeline.yaml'
       - '.github/workflows/database-pipeline.yaml'
       - '.github/workflows/terraform.yaml'
-      - 'manifest/ingress-resource.yaml'
-      - 'manifest/backend-deployment.yaml'
-      - 'manifest/redis-deployment.yaml'
+      - 'manifests/ingress-resource.yaml'
+      - 'manifests/backend-deployment.yaml'
+      - 'manifests/redis-deployment.yaml'
   workflow_dispatch:
   workflow_run:
     workflows: ["terraform"]
