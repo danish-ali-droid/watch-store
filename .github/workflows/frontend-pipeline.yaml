@@ -136,7 +136,8 @@ jobs:
           aws-region: eu-north-1
       - name: Update Kubeconfig for EKS
         run: |
-          aws eks update-kubeconfig --name watch-store-eks-cluster --region eu-north-1
+          export KUBECONFIG=$HOME/.kube/config
+          aws eks update-kubeconfig--name watch-store-eks-cluster --region eu-north-1
 
       - name: Deploy to EKS / Kubernetes
         run: |
@@ -150,7 +151,7 @@ jobs:
           export SMTP_USER=$(echo $SECRET_JSON | jq -r .SMTP_USER)
           export SMTP_PASS=$(echo $SECRET_JSON | jq -r .SMTP_PASS)
           export PASSWORD_SALT=$(echo $SECRET_JSON | jq -r .PASSWORD_SALT)
-
+          
           kubectl apply -f ns.yaml
           kubectl apply -f watch-app-cm.yaml
           kubectl apply -f watch-app-secret.yaml

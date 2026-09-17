@@ -133,7 +133,7 @@ jobs:
           aws-region: eu-north-1
       - name: Update configuration
         run: |
-          aws eks update-kubeconfig --name wach-store-eks-cluster --region eu-north-1
+          aws eks update-kubeconfig --name watch-store-eks-cluster --region eu-north-1
           
       - name: Deploy to EKS / Kubernetes   
         run: |
