@@ -37,6 +37,9 @@ jobs:
        run: npm ci
      - name:  check lint 
        run: npx eslint .
+     - name: check files
+       if: failure()
+       run: ls -al
      - name: formet check
        id: formet-check
        continue-on-error: true
