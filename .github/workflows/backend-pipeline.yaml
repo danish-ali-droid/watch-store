@@ -1,79 +1,79 @@
-name: backend pipeline 
-on: 
- push:
-   branches: [ main ]
-   paths:
-     - 'backend/**'
-     - '.github/workflows/backend-pipeline.yaml'
-     - 'manifest/backend-deployment.yaml'
-     - 'manifest/redis-deployment.yaml'
-     - 'manifest/ingress-resource.yaml'
- workflow_dispatch:
- workflow_run:
-    workflows: ["terraform"]   
+name: backend pipeline
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-pipeline.yaml"
+      - "manifest/backend-deployment.yaml"
+      - "manifest/redis-deployment.yaml"
+      - "manifest/ingress-resource.yaml"
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["terraform"]
     types:
       - completed
 concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
-   contents: write
+  contents: write
 jobs:
- check-syntax:
-   runs-on: ubuntu-latest
-   defaults:
-    run:
-     working-directory: ./backend
-   steps:
-     - name: checkout code
-       uses: actions/checkout@v7
-     - name: setup node
-       uses: actions/setup-node@v7
-       with: 
-        node-version: '22'
-        cache: 'npm'
-        cache-dependency-path: 'package-lock.json'
-     - name: install dependencies
-       run: npm ci
-     - name: formet check
-       id: formet-check
-       continue-on-error: true
-       run: npx prettier --check  "src/*.{js,ts,json}"
-     - name: fixed if prettier failed
-       if: steps.formet-check.outcome == 'failure'
-       run: | 
-         npx prettier --write  "**/*.{js,ts,json}"
-         git config local user.email "github-actions[bot]@users.noreply.github.com"
-         git config local user.name "github-actions[bot]"
-         git commit -am "style: auto-fix formatting with prettier" || echo "No changes to commit"
-         git push
-     
- test:
-   needs: check-syntax
-   runs-on: ubuntu-latest
-   defaults:
-     run:
-       working-directory: ./backend
-   steps: 
-     - name: checkout the code
-       uses: actions/checkout@v7
-     - name: setup node
-       uses: actions/setup-node@v7
-       with:
-         node-version: '22'
-         cache: 'npm'
-         cache-dependency-path: 'package-lock.json' 
-     - name: install dependencies
-       run: npm install
-     - name: Running test 
-       run: npm test -- --coverage --reporter=verbose || echo "No test define"
-     - name: upload report to artifact
-       uses: actions/upload-artifact@v7
-       with:
-         name: test-report
-         path: backend/coverage/
-         retention-days: 7
- build: 
+  check-syntax:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v7
+      - name: setup node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "package-lock.json"
+      - name: install dependencies
+        run: npm ci
+      - name: formet check
+        id: formet-check
+        continue-on-error: true
+        run: npx prettier --check  "src/*.{js,ts,json}"
+      - name: fixed if prettier failed
+        if: steps.formet-check.outcome == 'failure'
+        run: |
+          npx prettier --write  "**/*.{js,ts,json}"
+          git config local user.email "github-actions[bot]@users.noreply.github.com"
+          git config local user.name "github-actions[bot]"
+          git commit -am "style: auto-fix formatting with prettier" || echo "No changes to commit"
+          git push
+
+  test:
+    needs: check-syntax
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: checkout the code
+        uses: actions/checkout@v7
+      - name: setup node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "package-lock.json"
+      - name: install dependencies
+        run: npm install
+      - name: Running test
+        run: npm test -- --coverage --reporter=verbose || echo "No test define"
+      - name: upload report to artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report
+          path: backend/coverage/
+          retention-days: 7
+  build:
     needs: test
     runs-on: ubuntu-latest
     defaults:
@@ -82,42 +82,42 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v7
-      - name: setup node 
+      - name: setup node
         uses: actions/setup-node@v7
-        with: 
-         node-version: '22'
-         cache: 'npm'
-         cache-dependency-path: 'package-lock.json'
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "package-lock.json"
       - name: install dependcies
-        run: npm ci      
+        run: npm ci
       - name: runnig build
         run: npm run build
       - name: save build to artifact
-        uses: actions/upload-artifact@v7   
+        uses: actions/upload-artifact@v7
         with:
           name: backend-build
           path: backend/dist/
           retention-days: 7
- build-push:
-       needs: build
-       runs-on: ubuntu-latest
-       defaults:
-         run:
-           working-directory: ./backend
-       steps:
-         - name: checkout code
-           uses: actions/checkout@v7
-         - name: Login to Docker Hub
-           uses: docker/login-action@v4
-           with:
-            username: ${{ secrets.DOCKERHUB_USERNAME }}
-            password: ${{ secrets.DOCKERHUB_TOKEN }}
-         - name: build and push to dockerhub
-           uses: docker/build-push-action@v7
-           with:
-             push: true
-             tags: ${{secrets.DOCKERHUB_USERNAME}}/watch-store-backend:latest
- deploy:
+  build-push:
+    needs: build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v7
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: build and push to dockerhub
+        uses: docker/build-push-action@v7
+        with:
+          push: true
+          tags: ${{secrets.DOCKERHUB_USERNAME}}/watch-store-backend:latest
+  deploy:
     needs: build-push
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: self-hosted
@@ -127,18 +127,13 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v7
-      - name: configure aws cradentials
-        uses: aws-actions/configure-aws-credentials@v6.2.4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-north-1
+
       - name: Update configuration
-        run: |  
+        run: |
           aws eks update-kubeconfig --region eu-north-1 --name watch-store-eks-cluster
 
-          kubectl apply -f ingress-resource.yaml --validate=false
-          kubectl apply -f redis-deployment.yaml  --validate=false
-          kubectl apply -f backend-deployment.yaml --validate=false
+          kubectl apply -f ingress-resource.yaml 
+          kubectl apply -f redis-deployment.yaml  
+          kubectl apply -f backend-deployment.yaml -
           kubectl rollout restart deployment/backend-deployment -n watch-app || true
           kubectl rollout restart deployment/redis-deployment -n watch-app || true
