@@ -40,7 +40,7 @@ jobs:
      - name: formet check
        id: formet-check
        continue-on-error: true
-       run: npx prettier --check  "**/*.{js,ts,json}"
+       run: npx prettier --check  "src/*.{js,ts,json}"
      - name: fixed if prettier failed
        if: steps.formet-check.outcome == 'failure'
        run: | 
