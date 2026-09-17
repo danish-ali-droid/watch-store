@@ -54,6 +54,31 @@ resource "aws_iam_policy" "github_runner_custom_policy" {
   })
 
 }
+# +++++++++++++++ IAM Policy for OIDC ++++++++++++++++++++
+resource "aws_iam_role_policy" "oidc_iam_custom_policy" {
+  name = "watch-store-oidc-iam-permissions"
+  role = aws_iam_role.github-runner-role.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+         "iam:GetOpenIDConnectProvider",
+         "iam:CreateOpenIDConnectProvider",
+         "iam:TagOpenIDConnectProvider",
+         "iam:DeleteOpenIDConnectProvider",
+         "iam:CreateRole",
+         "iam:AttachRolePolicy",
+         "iam:PutRolePolicy",
+         "iam:GetRole"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
 
 # ++++++++++++++++++ EKS Access Entry +++++++++++++
 resource "aws_eks_access_entry" "runner_access" {
