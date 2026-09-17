@@ -4,11 +4,11 @@ metadata:
   name: watch-app-cm
   namespace: watch-app
 data:
-  DB_PORT: 5432
-  DB_USER: root
-  DB_NAME: watch_store
-  PORT: 4000
-  SMTP_HOST: smtp.gmail.com
-  SMTP_PORT: 465
+  DB_PORT: "5432"
+  DB_USER: "root"
+  DB_NAME: "watch_store"
+  PORT: "4000"
+  SMTP_HOST: "smtp.gmail.com"
+  SMTP_PORT: "465"
   DB_HOST: "${DB_HOST}"
-  REDIS_URL: redis://redis-service:6379  
+  REDIS_URL: "redis://redis-service:6379 "
