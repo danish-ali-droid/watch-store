@@ -135,6 +135,11 @@ jobs:
           aws-region: eu-north-1
       - name: Update configuration
         run: |
+          echo "Checking EKS Cluster state..."
+                   
+          aws eks wait cluster-active \
+            --name watch-store-eks-cluster \
+            --region eu-north-1
           aws eks update-kubeconfig --name watch-store-eks-cluster --region eu-north-1       
           kubectl apply -f ingress-resource.yaml
           kubectl apply -f redis-deployment.yaml 

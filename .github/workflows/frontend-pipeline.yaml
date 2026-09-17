@@ -137,6 +137,11 @@ jobs:
       - name: Update Kubeconfig for EKS
         run: |
           export KUBECONFIG=$HOME/.kube/config
+          echo "Checking EKS Cluster state..."
+                 
+          aws eks wait cluster-active \
+            --name watch-store-eks-cluster \
+            --region eu-north-1
           aws eks update-kubeconfig  --name watch-store-eks-cluster --region eu-north-1
           SECRET_JSON=$(aws secretsmanager get-secret-value \
            --secret-id "watch-store/postgres/credentials" \
