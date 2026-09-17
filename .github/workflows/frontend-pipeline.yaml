@@ -1,12 +1,22 @@
 name: Frontend Pipeline
-on: 
- push:
-   branches:
-     - main
-   paths-ignore:
-     - 'backend/**'
-     - 'db'
-     - 'terraform' 
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "backend/**"
+      - "db"
+      - "terraform"
+      - ".github/workflows/backendend-pipeline.yaml"
+      - ".github/workflows/database-pipeline.yaml"
+      - ".github/workflows/terraform.yaml"
+      - "manifest/ingress-resource.yaml"
+      - "manifest/backend-deployment.yaml"
+      - "manifest/redis-deployment.yaml"
+  workflow_run:
+    workflows: ["terraform"]
+    types:
+      - completed
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -14,75 +24,75 @@ permissions:
   contents: write
 jobs:
   check-syntax:
-     runs-on: ubuntu-latest
-     steps:
-        - name: checkout the code 
-          uses: actions/checkout@v7
-        - name: setup node
-          uses: actions/setup-node@v6
-          with:
-            node-version: '22'
-            cache: 'npm'
-            cache-dependency-path: './package-lock.json'
-        - name: install dependencies
-          run: npm ci
-        - name: Ensure Eslint config exists
-          run: |
-             if [ ! -f .eslintrc.json ] && [ ! -f .eslintrc.js ] && [ ! -f .eslintrc.ts ] && [ ! -f eslint.config.json ] && [ ! -f eslint.config.js ] && [ ! -f eslint.config.ts ]; then echo 'import js from "@eslint/js"; export default [js.configs.recommended];' > eslint.config.js; 
-             fi    
-        - name: Run eslint 
-          run: npx eslint .
-        - name: check formet
-          id: prettier_check
-          continue-on-error: true
-          run: npx prettier --check "src/**/*.{js,jsx,ts,tsx,css,json}"
-        - name: Fix format if check failed
-          id: fixed-syntax
-          if:  steps.prettier_check.outcome == 'failure'
-          run: |
-             npx prettier --write "src/**/*.{js,jsx,ts,tsx,css,json}"
-             git config  user.email "github-actions[bot]@users.noreply.github.com"
-             git config  user.name "github-actions[bot]"
-             git commit -am "style: auto-format code with prettier" || echo "No changes to commit"
-             git push
-        - name: TypeScript strict type check
-          run: npx tsc --noEmit
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout the code
+        uses: actions/checkout@v7
+      - name: setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "./package-lock.json"
+      - name: install dependencies
+        run: npm ci
+      - name: Ensure Eslint config exists
+        run: |
+          if [ ! -f .eslintrc.json ] && [ ! -f .eslintrc.js ] && [ ! -f .eslintrc.ts ] && [ ! -f eslint.config.json ] && [ ! -f eslint.config.js ] && [ ! -f eslint.config.ts ]; then echo 'import js from "@eslint/js"; export default [js.configs.recommended];' > eslint.config.js; 
+          fi
+      - name: Run eslint
+        run: npx eslint .
+      - name: check formet
+        id: prettier_check
+        continue-on-error: true
+        run: npx prettier --check "src/**/*.{js,jsx,ts,tsx,css,json}"
+      - name: Fix format if check failed
+        id: fixed-syntax
+        if: steps.prettier_check.outcome == 'failure'
+        run: |
+          npx prettier --write "src/**/*.{js,jsx,ts,tsx,css,json}"
+          git config  user.email "github-actions[bot]@users.noreply.github.com"
+          git config  user.name "github-actions[bot]"
+          git commit -am "style: auto-format code with prettier" || echo "No changes to commit"
+          git push
+      - name: TypeScript strict type check
+        run: npx tsc --noEmit
   test:
-     needs: check-syntax
-     runs-on: ubuntu-latest
-     steps:
-       - name: checkout code
-         uses: actions/checkout@v7
-       - name: setup node
-         uses: actions/setup-node@v6
-         with:
-           node-version: '22'
-           cache: 'npm'
-           cache-dependency-path: './package-lock.json'
-       - name: install dependencies
-         run: npm ci
-       - name: Running test
-         run: npm test -- --coverage --reporter=verbose || echo "No Test defines"
-       - name: Upload Test Coverage Artifact
-         uses: actions/upload-artifact@v7
-         with:
-          name: test-coverage-report
-          path: coverage/
-          retention-days: 7
-  build:
-     needs: test
-     runs-on: ubuntu-latest
-     steps:
+    needs: check-syntax
+    runs-on: ubuntu-latest
+    steps:
       - name: checkout code
         uses: actions/checkout@v7
       - name: setup node
         uses: actions/setup-node@v6
-        with: 
-         node-version: '22'
-         cache: 'npm'
-         cache-dependency-path: './package-lock.json'
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "./package-lock.json"
       - name: install dependencies
-        run: npm ci 
+        run: npm ci
+      - name: Running test
+        run: npm test -- --coverage --reporter=verbose || echo "No Test defines"
+      - name: Upload Test Coverage Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-coverage-report
+          path: coverage/
+          retention-days: 7
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v7
+      - name: setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "./package-lock.json"
+      - name: install dependencies
+        run: npm ci
       - name: create build
         run: npm run build
       - name: upload to artifact
@@ -91,26 +101,27 @@ jobs:
           name: frontend-build
           path: dist/
           retention-days: 7
-  build-&-push:
-       needs: build
-       runs-on: ubuntu-latest
-       steps:
-         - name: checkout code
-           uses: actions/checkout@v7
-         - name: Login to Docker Hub
-           uses: docker/login-action@v4
-           with:
-            username: ${{ secrets.DOCKERHUB_USERNAME }}
-            password: ${{ secrets.DOCKERHUB_TOKEN }}
-         - name: build and push to dockerhub
-           run: |
-             docker build -t watch-store-frontend .
-             docker tag watch-store-frontend ${{ secrets.DOCKERHUB_USERNAME }}/watch-store-frontend:latest
-             docker push ${{ secrets.DOCKERHUB_USERNAME }}/watch-store-frontend:latest
+  build-push:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v7
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: build and push to dockerhub
+        run: |
+          docker build -t watch-store-frontend .
+          docker tag watch-store-frontend ${{ secrets.DOCKERHUB_USERNAME }}/watch-store-frontend:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/watch-store-frontend:latest
   deploy:
-    needs: build-&-push
+    needs: build-push
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: self-hosted
-    defaults: 
+    defaults:
       run:
         working-directory: ./manifests
     steps:
@@ -124,24 +135,23 @@ jobs:
           aws-region: eu-north-1
       - name: Update Kubeconfig for EKS
         run: |
-          aws eks update-kubeconfig --name wach-store-eks-cluster --region eu-north-1
+          aws eks update-kubeconfig --name watch-store-eks-cluster --region eu-north-1
 
-      - name: Deploy to EKS / Kubernetes   
+      - name: Deploy to EKS / Kubernetes
         run: |
-           SECRET_JSON=$(aws secretsmanager get-secret-value \
-            --secret-id "watch-store/postgres/credentials" \
-            --query SecretString \
-            --output text \
-            --region eu-north-1)
-           export DB_HOST=$(echo $SECRET_JSON | jq -r .DB_HOST)
-           export DB_PASSWORD=$(echo $SECRET_JSON | jq -r .DB_PASSWORD)
-           export SMTP_USER=$(echo $SECRET_JSON | jq -r .SMTP_USER)
-           export SMTP_PASS=$(echo $SECRET_JSON | jq -r .SMTP_PASS)
-           export PASSWORD_SALT=$(echo $SECRET_JSON | jq -r .PASSWORD_SALT)
-           
-           kubectl apply -f ns.yaml
-           kubectl apply -f watch-app-cm.yaml
-           kubectl apply -f watch-app-secret.yaml
-           kubectl apply -f frontend-deployment.yaml
-           kubectl rollout restart deployment/watch-store-frontend -n default || true
-  
+          SECRET_JSON=$(aws secretsmanager get-secret-value \
+           --secret-id "watch-store/postgres/credentials" \
+           --query SecretString \
+           --output text \
+           --region eu-north-1)
+          export DB_HOST=$(echo $SECRET_JSON | jq -r .DB_HOST)
+          export DB_PASSWORD=$(echo $SECRET_JSON | jq -r .DB_PASSWORD)
+          export SMTP_USER=$(echo $SECRET_JSON | jq -r .SMTP_USER)
+          export SMTP_PASS=$(echo $SECRET_JSON | jq -r .SMTP_PASS)
+          export PASSWORD_SALT=$(echo $SECRET_JSON | jq -r .PASSWORD_SALT)
+
+          kubectl apply -f ns.yaml
+          kubectl apply -f watch-app-cm.yaml
+          kubectl apply -f watch-app-secret.yaml
+          kubectl apply -f frontend-deployment.yaml
+          

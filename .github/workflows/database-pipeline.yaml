@@ -7,6 +7,10 @@ on:
       - 'db/**'
       - '.github/workflows/database-pipeline.yaml'
   workflow_dispatch:
+  workflow_run:
+    workflows: ["terraform"]
+    types:
+      - completed
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -84,6 +88,7 @@ jobs:
           psql -h localhost -U test_user -d test_watch_store -v  ON_ERROR_STOP=1 -f seed.sql
   deploy:
       needs: test-migration
+      if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
       runs-on: self-hosted
       defaults:
         run: 

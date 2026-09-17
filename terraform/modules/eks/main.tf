@@ -4,7 +4,7 @@
 
 # +++++++++++++++ EKS Cluster ++++++++++++++ 
 resource "aws_eks_cluster" "watch-store-eks-cluster" {
-  name = "wach-store-eks-cluster"
+  name = "watch-store-eks-cluster"
 
   access_config {
     authentication_mode = "API"
@@ -16,6 +16,7 @@ resource "aws_eks_cluster" "watch-store-eks-cluster" {
   vpc_config {
     subnet_ids = var.subnet_ids
     security_group_ids = var.watch-store-sg
+  
   }
 
 

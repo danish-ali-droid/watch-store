@@ -14,7 +14,7 @@ module "ec2" {
   }
 module "eks" {
   source = "./modules/eks"
-  subnet_ids = slice(module.vpc.private-subnet-ids,0,1)
+  subnet_ids = slice(module.vpc.private-subnet-ids,0,2)
   cluster-role = module.iam-role.cluster
   cluster-policy-attachment = module.iam-role.cluster_AmazonEKSClusterPolicy
   pod-execution-urn = module.iam-role.fargate_pod_execution_role
