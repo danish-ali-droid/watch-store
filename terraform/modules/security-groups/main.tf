@@ -35,7 +35,7 @@ resource "aws_security_group" "watch-store-db-sg" {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
-    security_groups = [aws_security_group.watch-store-sg.id]
+    security_groups = [aws_security_group.watch-store-sg.id, aws_security_group.github-runner-sg.id]
   }
   tags = {
     Name = "watch-store-db-sg"

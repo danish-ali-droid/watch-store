@@ -16,6 +16,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
+  build: {
+    sourcemap: false,       
+    chunkSizeWarningLimit: 1600,
+  },
 
   test: {
     globals: true,
