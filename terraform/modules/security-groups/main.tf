@@ -1,27 +1,10 @@
 
-# +++++++++++++++++++ Mater EC2 Security Group ++++++++++++++++++++
-resource "aws_security_group" "watch-store-master-ec2-sg" {
-    vpc_id = var.vpc-id
-    name = "watch-store-master-sg"
-    description = "Security group for watch store"
-    egress {
-        from_port = 0
-        to_port = 0
-        protocol = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-       
-        }
- tags = {
-        Name = "watch-store-master-sg"
-    }
 
-}
-
-# +++++++++++++++++++ Worker EC2 Security Group ++++++++++++++++++++
-resource "aws_security_group" "watch-store-worker-ec2-sg" {
+# +++++++++++++++++++ cluster  Security Group ++++++++++++++++++++
+resource "aws_security_group" "watch-store-sg" {
     vpc_id = var.vpc-id
-    name = "watch-store-worker-sg"
-    description = "Security group for watch store"
+    name = "watch-store-cluter-sg"
+     
     egress {
         from_port = 0
         to_port = 0
@@ -31,7 +14,7 @@ resource "aws_security_group" "watch-store-worker-ec2-sg" {
         }
     
  tags = {
-        Name = "watch-store-worker-sg"
+        Name = "watch-store-sg"
     }
 
 }
@@ -52,11 +35,34 @@ resource "aws_security_group" "watch-store-db-sg" {
         from_port = 5432
         to_port = 5432
         protocol = "tcp"
-        security_groups = [aws_security_group.watch-store-master-ec2-sg.id , aws_security_group.watch-store-worker-ec2-sg.id]
+        security_groups = [aws_security_group.watch-store-sg.id ]
     }
  tags = {
         Name = "watch-store-db-sg"
     }
 
 }
+# +++++++++++++++++++ Self Hosted Security Group ++++++++++++++++++++
+resource "aws_security_group" "github-runner-sg" {
+    vpc_id = var.vpc-id
+    name = "watch-store-cluter-sg"
+     ingress {
+        from_port = 22
+        to_port = 22
+        protocol = "TCP"
+        cidr_blocks = ["0.0.0.0/0"]
+       
+     }
+    egress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+       
+        }
+    
+ tags = {
+        Name = "Github-runner-sg"
+    }
 
+}

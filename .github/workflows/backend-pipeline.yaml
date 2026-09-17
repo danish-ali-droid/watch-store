@@ -4,7 +4,7 @@ on:
    branches: [ main ]
    paths:
      - 'backend/**'
-     - '.github/workflows/backendpipeline.yaml'
+     - '.github/workflows/backend-pipeline.yaml'
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
@@ -19,6 +19,118 @@ jobs:
    steps:
      - name: checkout code
        uses: actions/checkout@v7
-
-
-
+     - name: setup node
+       uses: actions/setup-node@v7
+       with: 
+        node-version: '22'
+        cache: 'npm'
+        cache-dependency-path: 'backend/package-lock.json'
+     - name: install dependencies
+       run: npm ci
+     - name:  check lint 
+       run: npx eslint .
+     - name: formet check
+       id: formet-check
+       continue-on-error: true
+       run: npx prettier --check  "**/*.{js,ts,json}"
+     - name: fixed if prettier failed
+       if: steps.formet-check.outcome == 'failure'
+       run: | 
+         npx prettier --write  "**/*.{js,ts,json}"
+         git config local user.email "github-actions[bot]@users.noreply.github.com"
+         git config local user.name "github-actions[bot]"
+         git commit -am "style: auto-fix formatting with prettier" || || echo "No changes to commit"
+         git push
+     - name: check formet strict 
+       run: npx tsc --noEmit
+ test:
+   needs: check-syntax
+   runs-on: ubuntu-latest
+   defaults:
+     run:
+       working-directory: ./backend
+   steps: 
+     - name: checkout the code
+       uses: actions/checkout@v7
+     - name: setup node
+       uses: actions/setup-node@v7
+       with:
+         node-version: '22'
+         cache: 'npm'
+         cache-dependency-path: 'backend/package-lock.json' 
+     - name: install dependencies
+       run: npm install
+     - name: Running test 
+       run: npm test -- --coverage --reporter=verbose || echo "No test define"
+     - name: upload report to artifact
+       uses: actions/upload-artifact@v7
+       with:
+         name: test-report
+         path: backend/coverage/
+         retention-days: 7
+ build: 
+    needs: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v7
+      - name: setup node 
+        uses: actions/setup-node@v7
+        with: 
+        node-version: '22'
+        cache: 'npm'
+        cache-dependency-path: 'backend/package-lock.json'
+      - name: runnig build
+        run: npm run build
+      - name: save build to artifact
+        uses: actions/upload-artifact@v7   
+        with:
+          name: backend-build
+          path: backend/dist/
+          retention-days: 7
+ build-&-push:
+       needs: build
+       runs-on: ubuntu-latest
+       defaults:
+         run:
+           working-directory: ./backend
+       steps:
+         - name: checkout code
+           uses: actions/checkout@v7
+         - name: Login to Docker Hub
+           uses: docker/login-action@v4
+           with:
+            username: ${{ secrets.DOCKERHUB_USERNAME }}
+            password: ${{ secrets.DOCKERHUB_TOKEN }}
+         - name: build and push to dockerhub
+           uses: docker/build-push-action@v7
+           with:
+             push: true
+             tags: ${{secrets.DOCKERHUB_USERNAME}}/watch-store-backend:latest
+ deploy:
+    needs: build-&-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v7
+      - name: configure aws cradentials
+        uses: aws-actions/configure-aws-credentials@v6.2.4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+      - name: Create Zip Bundle for CodeDeploy
+        run: zip -r deployment.zip manifests/  scripts/ appspec.yml
+      - name: Upload Zip to S3
+        run: |
+          aws s3 cp deployment.zip s3://${{ secrets.AWS_S3_BUCKET }}/watch-store/deployment.zip
+        
+      - name: Trigger CodeDeploy Deployment
+        run: |
+          aws deploy create-deployment \
+            --application-name watch-app-code-deploy-app \
+            --deployment-group-name watch-store-deployment-group \
+            --s3-location bucket=${{ secrets.AWS_S3_BUCKET }},key=watch-store/deployment.zip,bundleType=zip

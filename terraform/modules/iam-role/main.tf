@@ -3,7 +3,7 @@
 # ======================================================
 
 # ++++++++++++++++++ EC2 Role ++++++++++++++++++++
-resource "aws_iam_role" "watch-store-ec2-role" {
+resource "aws_iam_role" "github-runner-role" {
   name = "watch-store-code-deploy-role"
   assume_role_policy = jsonencode({
                       Version = "2012-10-17"
@@ -24,20 +24,11 @@ resource "aws_iam_role" "watch-store-ec2-role" {
   }
 }
 
-  # ++++++++++++++++++ IAM Role Attachment +++++++++++++
- 
+  # ++++++++++++++++++ IAM Policy +++++++++++++
 
-resource "aws_iam_role_policy_attachment" "watch-store-role-s3-policy-attachment" {
-role = aws_iam_role.watch-store-ec2-role.name
-policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
-}
-resource "aws_iam_role_policy_attachment" "watch-store-role-ssm-policy-attachment" {
-role = aws_iam_role.watch-store-ec2-role.name
-policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
-resource "aws_iam_role_policy" "k3s_ssm_parameter_policy" {
-  name = "k3s-ssm-parameter-policy"
-  role = aws_iam_role.watch-store-ec2-role.name
+resource "aws_iam_policy" "github_runner_custom_policy" {
+  name        = "watch-store-jumper-custom-policy"
+  description = "Allow Secrets Manager and EKS describe access for Jumper server"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -45,39 +36,90 @@ resource "aws_iam_role_policy" "k3s_ssm_parameter_policy" {
       {
         Effect = "Allow"
         Action = [
-          "ssm:PutParameter",
-          "ssm:GetParameter",
-          "ssm:GetParameters"
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
         ]
-        Resource = "arn:aws:ssm:*:*:parameter/k3s/*"
+        Resource = "*" 
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "eks:DescribeCluster",
+          "eks:ListClusters"
+        ]
+        Resource = "*"
       }
     ]
   })
 }
-# +++++++++++++++++ CodeDeploy Service Role ++++++++++++
-resource "aws_iam_role" "codedeploy_service_role" {
-  name = "watch-store-codedeploy-service-role"
+
+  # ++++++++++++++++++ IAM Role Attachment +++++++++++++
+ 
+
+resource "aws_iam_role_policy_attachment" "attach-ssm-policy" {
+  role       = aws_iam_role.github-runner-role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+resource "aws_iam_role_policy_attachment" "attach-secret-policy" {
+  role       = aws_iam_role.github-runner-role.name
+  policy_arn = aws_iam_policy.github_runner_custom_policy.arn
+}
+
+
+# ++++++++++++++++++ EKS Role ++++++++++++++++++++
+
+resource "aws_iam_role" "cluster" {
+  name = "watch-store-eks-cluster"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "sts:AssumeRole",
+          "sts:TagSession"
+        ]
+        Effect = "Allow"
+        Principal = {
+          Service = "eks.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+# ++++++++++++++++++ EKS Role Policy Attachment ++++++++++++++++++++
+resource "aws_iam_role_policy_attachment" "cluster_AmazonEKSClusterPolicy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+  role       = aws_iam_role.cluster.name
+}
+resource "aws_iam_role_policy_attachment" "resorce-controller" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
+  role       = aws_iam_role.cluster.name
+}
+
+# ++++++++++++++++++ EKS Forgate Role ++++++++++++++++++++
+resource "aws_iam_role" "fargate_pod_execution_role" {
+  name = "watch-store-fargate-pod-execution-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action    = "sts:AssumeRole"
-      Effect    = "Allow"
-      Principal = { Service = "codedeploy.amazonaws.com" }
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = { Service = "eks-fargate-pods.amazonaws.com" }
     }]
   })
 }
-
-  # ++++++++++++++++++ IAM Role Attachment +++++++++++++
-
-resource "aws_iam_role_policy_attachment" "codedeploy_service_policy" {
-  role       = aws_iam_role.codedeploy_service_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole"
+# ++++++++++++++++++ EKS Forgate Role Policy Attachment ++++++++++++++++++++
+resource "aws_iam_role_policy_attachment" "fargate_pod_execution_policy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
+  role       = aws_iam_role.fargate_pod_execution_role.name
 }
-# ++++++++++++++++++ Instance Profile ++++++++++++++++++++
+
+  # ++++++++++++++++++ Ec2 Profile +++++++++++++
 
 resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "watch-store-ec2-codedeploy-profile"
-  role = aws_iam_role.watch-store-ec2-role.name
+  name = "github-runner-profile"
+  role = aws_iam_role.github-runner-role.name
 }
 

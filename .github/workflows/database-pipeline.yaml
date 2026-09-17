@@ -1,0 +1,65 @@
+name: Database Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'db/**'
+      - '.github/workflows/db-pipeline.yaml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python for SQL Linter
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install SQLFluff Linter
+        run: pip install sqlfluff
+
+      - name: Check SQL Syntax
+        run: |
+          sqlfluff lint db/ --dialect postgres || echo "SQL Formatting Warnings Detected"
+
+  test-migration:
+    needs: check-syntax
+    runs-on: ubuntu-latest
+    services:
+      postgres-test:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: test_watch_store
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL Client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Test Apply SQL Schema
+        env:
+          PGPASSWORD: test_password
+        run: |
+          echo "Testing schema deployment on ephemeral database..."
+          psql -h localhost -U test_user -d test_watch_store -f db/schema.sql
+
+          # deploy-to-rds:

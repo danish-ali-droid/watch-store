@@ -45,9 +45,9 @@ resource "aws_route_table_association" "watch-store-public-rt-association" {
 # =================================================
  resource "aws_subnet" "watch-store-private-subnet"{
     vpc_id = aws_vpc.watch-store-vpc.id
-    count = 3
+    count = 4
     cidr_block = cidrsubnet(aws_vpc.watch-store-vpc.cidr_block, 8 , count.index + 2)
-    availability_zone = var.azs[count.index]
+    availability_zone = var.azs[count.index % length(var.azs)]
     tags = {
         Name = "watch-store-private-subnet-${count.index + 1}"
     }

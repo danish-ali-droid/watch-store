@@ -1,0 +1,14 @@
+version: '0.0'
+os: linux
+files:
+  - source: schema.sql
+    destination: /tmp/db/
+  - source: seed.sql
+    destination: /tmp/db/    
+  - source: scripts/
+    destination: /tmp/db/scripts/
+hooks:
+  AfterInstall:
+    - location: scripts/deploy_db.sh
+      timeout: 300
+      runas: root

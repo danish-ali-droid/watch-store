@@ -38,6 +38,7 @@
     cluster_identifier      = aws_rds_cluster.watch-store-db-cluster.id
     instance_class          = "db.t3.medium"
     engine                  = aws_rds_cluster.watch-store-db-cluster.engine
+    
     publicly_accessible     = false
   
     tags = {

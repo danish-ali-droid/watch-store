@@ -1,10 +1,15 @@
 output "Instance-profile-name" {
   value = aws_iam_instance_profile.ec2_profile.name
 }
-output "codedeploy-service-role-arn" {
-  value = aws_iam_role.codedeploy_service_role.arn
+output "cluster_AmazonEKSClusterPolicy" {
+  value = aws_iam_role_policy_attachment.cluster_AmazonEKSClusterPolicy.id
 }
-output "ec2-role-arn" {
-    value = aws_iam_role.watch-store-ec2-role.arn
-  
+output "fargate_pod_execution_role" {
+  value = aws_iam_role.fargate_pod_execution_role.arn
+}
+output "cluster" {
+  value = aws_iam_role.cluster.id
+}
+output "ec2_profile" {
+  value = aws_iam_instance_profile.ec2_profile.name
 }

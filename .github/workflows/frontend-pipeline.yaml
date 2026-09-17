@@ -6,7 +6,6 @@ on:
    paths-ignore:
      - 'backend/**'
      - 'db'
-     - 'manifests'
      - 'terraform' 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -42,8 +41,8 @@ jobs:
           if:  steps.prettier_check.outcome == 'failure'
           run: |
              npx prettier --write "src/**/*.{js,jsx,ts,tsx,css,json}"
-             git config --local user.email "github-actions[bot]@users.noreply.github.com"
-             git config --local user.name "github-actions[bot]"
+             git config  user.email "github-actions[bot]@users.noreply.github.com"
+             git config  user.name "github-actions[bot]"
              git commit -am "style: auto-format code with prettier" || echo "No changes to commit"
              git push
         - name: TypeScript strict type check
@@ -92,4 +91,45 @@ jobs:
           name: frontend-build
           path: dist/
           retention-days: 7
-#  deploy:
+  build-&-push:
+       needs: build
+       runs-on: ubuntu-latest
+       steps:
+         - name: checkout code
+           uses: actions/checkout@v7
+         - name: Login to Docker Hub
+           uses: docker/login-action@v4
+           with:
+            username: ${{ secrets.DOCKERHUB_USERNAME }}
+            password: ${{ secrets.DOCKERHUB_TOKEN }}
+         - name: build and push to dockerhub
+           run: |
+             docker build -t watch-store-frontend .
+             docker tag watch-store-frontend ${{ secrets.DOCKERHUB_USERNAME }}/watch-store-frontend:latest
+             docker push ${{ secrets.DOCKERHUB_USERNAME }}/watch-store-frontend:latest
+  deploy:
+    needs: build-&-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v7
+      - name: configure aws cradentials
+        uses: aws-actions/configure-aws-credentials@v6.2.4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+      - name: Create Zip Bundle for CodeDeploy
+        run: zip -r deployment.zip manifests/  scripts/ appspec.yml
+      - name: Upload Zip to S3
+        run: |
+          aws s3 cp deployment.zip s3://${{ secrets.AWS_S3_BUCKET }}/watch-store/deployment.zip
+
+      - name: Trigger CodeDeploy Deployment
+        run: |
+          aws deploy create-deployment \
+            --application-name watch-app-code-deploy-app \
+            --deployment-group-name watch-store-deployment-group \
+            --s3-location bucket=${{ secrets.AWS_S3_BUCKET }},key=watch-store/deployment.zip,bundleType=zip
+
+      

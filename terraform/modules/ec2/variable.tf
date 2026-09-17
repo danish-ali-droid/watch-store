@@ -1,16 +1,14 @@
-
-    variable  "azs" { 
-    type = string 
-    }
-    variable "security_group_master_id"{
-       type = string 
-    }
-     variable "security_group_worker_id"{
-       type = string 
-    }
-  variable "private-subnet-1-id" {
-     type = string
-  }
+  
+ variable "subnet-id" {
+   type = string
+   
+ }
   variable "instance_profile" {
     type = string
   }
+  variable "github-runner-sg" {
+    type = string
+  }
+ variable  "enbale-public-ip" {
+   type = bool
+ }
