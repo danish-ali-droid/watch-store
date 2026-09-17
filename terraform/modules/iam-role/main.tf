@@ -30,7 +30,7 @@ resource "aws_iam_policy" "github_runner_custom_policy" {
   name        = "watch-store-jumper-custom-policy"
   description = "Allow Secrets Manager and EKS describe access for Jumper server"
 
-  policy = jsonencode({
+ policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
@@ -44,15 +44,33 @@ resource "aws_iam_policy" "github_runner_custom_policy" {
       {
         Effect = "Allow"
         Action = [
-          "eks:DescribeCluster",
-          "eks:ListClusters"
+          "eks:Describe*",
+          "eks:List*",
+          "eks:AccessKubernetesApi"
         ]
         Resource = "*"
       }
     ]
   })
+
 }
 
+# ++++++++++++++++++ EKS Access Entry +++++++++++++
+resource "aws_eks_access_entry" "runner_access" {
+  cluster_name  = "watch-store-eks-cluster"
+  principal_arn = aws_iam_role.github-runner-role.arn
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "runner_policy" {
+  cluster_name  = "watch-store-eks-cluster"
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = aws_iam_role.github-runner-role.arn
+
+  access_scope {
+    type = "cluster"
+  }
+}
   # ++++++++++++++++++ IAM Role Attachment +++++++++++++
  
 
@@ -63,6 +81,10 @@ resource "aws_iam_role_policy_attachment" "attach-ssm-policy" {
 resource "aws_iam_role_policy_attachment" "attach-secret-policy" {
   role       = aws_iam_role.github-runner-role.name
   policy_arn = aws_iam_policy.github_runner_custom_policy.arn
+}
+resource "aws_iam_role_policy_attachment" "attach-eks-cluster-policy" {
+  role       = aws_iam_role.github-runner-role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
 
