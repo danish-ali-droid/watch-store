@@ -10,4 +10,5 @@ data:
   PORT: 4000
   SMTP_HOST: smtp.gmail.com
   SMTP_PORT: 465
+  DB_HOST: "${DB_HOST}"
   REDIS_URL: redis://redis-service:6379  

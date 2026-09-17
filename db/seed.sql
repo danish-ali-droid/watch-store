@@ -7,7 +7,7 @@ RESTART IDENTITY CASCADE;
 
 -- ── Lookup tables ────────────────────────────────────────────
 
-INSERT INTO brands (name) VALUES
+INSERT INTO brands (brand_name) VALUES
 ('Rolex'),
 ('Apple'),
 ('Casio'),
@@ -17,12 +17,12 @@ INSERT INTO brands (name) VALUES
 ('Panerai'),
 ('TAG Heuer');
 
-INSERT INTO categories (name) VALUES
+INSERT INTO categories (category_name) VALUES
 ('Luxury'),
 ('Sports'),
 ('Smart');
 
-INSERT INTO movements (name) VALUES
+INSERT INTO movements (movement_name) VALUES
 ('Automatic'),
 ('Digital'),
 ('Quartz Solar'),
@@ -30,7 +30,7 @@ INSERT INTO movements (name) VALUES
 ('Quartz + GPS'),
 ('Manual');
 
-INSERT INTO case_materials (name) VALUES
+INSERT INTO case_materials (material_name) VALUES
 ('Oystersteel'),
 ('Titanium'),
 ('Carbon Fiber'),
@@ -38,15 +38,19 @@ INSERT INTO case_materials (name) VALUES
 
 -- ── Users ────────────────────────────────────────────────────
 
-INSERT INTO users (name, email, password, role) VALUES
+INSERT INTO users (user_name, email, password_hash, user_role) VALUES
 (
     'Ahmad', 'ahmad@gmail.com',
-    '801a8d076da222a82f5b8ebb062e29839a04ec9ee1f7cabccbada9c17e2390b43fa257c2a578e7972e2e61a17889542243c1f3e3cf67f3437956f8febbbf86ae',
+    '801a8d076da222a82f5b8ebb062e29839a04ec9ee1f7cabccbada9c17e23'
+    || '90b43fa257c2a578e7972e2e61a17889542243c1f3e3cf67f3437956f8fe'
+    || 'bbbf86ae',
     'user'
 ),
 (
     'Admin', 'admin@gmail.com',
-    '0e2eb5500c848e7bc6cb9f1b707c8f332ef1eb74a00d38059420998d08dd49d2e82d9db94714c6dde68962d9679d9f579dca8b4ba6e41080c7b50b0fcc710598',
+    '0e2eb5500c848e7bc6cb9f1b707c8f332ef1eb74a00d38059420998d08dd'
+    || '49d2e82d9db94714c6dde68962d9679d9f579dca8b4ba6e41080c7b50b0f'
+    || 'cc710598',
     'admin'
 );
 
@@ -55,14 +59,16 @@ INSERT INTO user_addresses (user_id, phone, address, city, is_default) VALUES
 (2, '03007654321', 'Admin Lane, Sector 5', 'Lahore', TRUE);
 
 -- ── Watches ──────────────────────────────────────────────────
--- brand_id:         1=Rolex  2=Apple  3=Casio  4=Breitling  5=Garmin  6=Tissot  7=Panerai  8=TAG Heuer
+-- brand_id:         1=Rolex  2=Apple  3=Casio  4=Breitling  5=Garmin
+--                   6=Tissot  7=Panerai  8=TAG Heuer
 -- category_id:      1=Luxury 2=Sports 3=Smart
--- movement_id:      1=Automatic 2=Digital 3=Quartz Solar 4=In-house Chronograph 5=Quartz+GPS 6=Manual
+-- movement_id:      1=Automatic 2=Digital 3=Quartz Solar
+--                   4=In-house Chronograph 5=Quartz+GPS 6=Manual
 -- case_material_id: 1=Oystersteel 2=Titanium 3=Carbon Fiber 4=Stainless Steel
 
 INSERT INTO watches
 (
-    name, brand_id, category_id, movement_id, case_material_id,
+    watch_name, brand_id, category_id, movement_id, case_material_id,
     price, original_price, primary_image,
     water_resistance, warranty, case_size, description,
     stock, rating, reviews, featured, is_new
@@ -221,7 +227,8 @@ VALUES
     TRUE
 );
 
--- Additional images (watch_images table — one entry per watch matching primary_image)
+-- Additional images (watch_images table — one entry per watch matching
+-- primary_image)
 INSERT INTO watch_images (watch_id, image_url, sort_order) VALUES
 (1, '/assets/pexels-6230456.jpeg', 0),
 (2, '/assets/pexels-8968349.jpeg', 0),
