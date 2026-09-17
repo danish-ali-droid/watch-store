@@ -99,7 +99,7 @@ jobs:
          - name: Fetch Credentials & Run Migrations on RDS
            run: |
              SECRET_JSON=$(aws secretsmanager get-secret-value \
-             --secret-id "prod/db-secrets" \
+             --secret-id "watch-store/postgres/credentials \
              --region eu-north-1 \
              --query SecretString \
              --output text)
