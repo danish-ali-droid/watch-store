@@ -93,7 +93,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: "./package-lock.json"
       - name: install dependencies
-        run: npm ci
+        run: npm install
       - name: create build
         run: npm run build
       - name: upload to artifact
@@ -137,10 +137,7 @@ jobs:
       - name: Update Kubeconfig for EKS
         run: |
           export KUBECONFIG=$HOME/.kube/config
-          aws eks update-kubeconfig--name watch-store-eks-cluster --region eu-north-1
-
-      - name: Deploy to EKS / Kubernetes
-        run: |
+          aws eks update-kubeconfig  --name watch-store-eks-cluster --region eu-north-1
           SECRET_JSON=$(aws secretsmanager get-secret-value \
            --secret-id "watch-store/postgres/credentials" \
            --query SecretString \
@@ -151,7 +148,6 @@ jobs:
           export SMTP_USER=$(echo $SECRET_JSON | jq -r .SMTP_USER)
           export SMTP_PASS=$(echo $SECRET_JSON | jq -r .SMTP_PASS)
           export PASSWORD_SALT=$(echo $SECRET_JSON | jq -r .PASSWORD_SALT)
-          
           kubectl apply -f ns.yaml
           kubectl apply -f watch-app-cm.yaml
           kubectl apply -f watch-app-secret.yaml

@@ -88,6 +88,8 @@ jobs:
          node-version: '22'
          cache: 'npm'
          cache-dependency-path: 'package-lock.json'
+      - name: install dependcies
+        run: npm ci      
       - name: runnig build
         run: npm run build
       - name: save build to artifact
@@ -133,12 +135,9 @@ jobs:
           aws-region: eu-north-1
       - name: Update configuration
         run: |
-          aws eks update-kubeconfig --name watch-store-eks-cluster --region eu-north-1
-          
-      - name: Deploy to EKS / Kubernetes   
-        run: |
-           kubectl apply -f ingress-resource.yaml
-           kubectl apply -f redis-deployment.yaml 
-           kubectl apply -f backend-deployment.yaml
-           kubectl rollout restart deployment/backend-deployment -n watch-app || true
-           kubectl rollout restart deployment/redis-deployment -n watch-app || true
+          aws eks update-kubeconfig --name watch-store-eks-cluster --region eu-north-1       
+          kubectl apply -f ingress-resource.yaml
+          kubectl apply -f redis-deployment.yaml 
+          kubectl apply -f backend-deployment.yaml
+          kubectl rollout restart deployment/backend-deployment -n watch-app || true
+          kubectl rollout restart deployment/redis-deployment -n watch-app || true
