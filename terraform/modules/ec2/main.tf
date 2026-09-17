@@ -11,7 +11,7 @@ resource "aws_instance" "github-self-hosted-runner"  {
     associate_public_ip_address = var.enbale-public-ip
    user_data = file("${path.module}/templates/user-data.sh")
 
-    key_name = "danish-keypair.pem"
+    key_name = "danish-keypair"
     tags = {
         Name = "Gihub-runner"
     }
