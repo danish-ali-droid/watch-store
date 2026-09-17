@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths-ignore:
-      - "backend/**"
+      - "backend"
       - "db"
       - "terraform"
       - ".github/workflows/backendend-pipeline.yaml"

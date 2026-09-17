@@ -3,7 +3,8 @@ on:
  push:
    branches: [ main ]
    paths:
-     - 'backend/**'
+     - 'backend'
+     - 'db'
      - '.github/workflows/backend-pipeline.yaml'
      - 'manifest/backend-deployment.yaml'
      - 'manifest/redis-deployment.yaml'
@@ -32,7 +33,7 @@ jobs:
        with: 
         node-version: '22'
         cache: 'npm'
-        cache-dependency-path: 'backend/package-lock.json'
+        cache-dependency-path: 'package-lock.json'
      - name: install dependencies
        run: npm ci
      - name:  check lint 
@@ -65,7 +66,7 @@ jobs:
        with:
          node-version: '22'
          cache: 'npm'
-         cache-dependency-path: 'backend/package-lock.json' 
+         cache-dependency-path: 'package-lock.json' 
      - name: install dependencies
        run: npm install
      - name: Running test 
@@ -90,7 +91,7 @@ jobs:
         with: 
          node-version: '22'
          cache: 'npm'
-         cache-dependency-path: 'backend/package-lock.json'
+         cache-dependency-path: 'package-lock.json'
       - name: runnig build
         run: npm run build
       - name: save build to artifact
