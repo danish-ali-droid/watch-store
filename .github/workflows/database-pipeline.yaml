@@ -74,14 +74,14 @@ jobs:
           PGPASSWORD: test_password
         run: |
           echo "Testing schema deployment on ephemeral database..."
-          psql -h localhost -U test_user -d test_watch_store -v ON_ERROR_STOP=1 -f schema.sql
+          psql -h localhost -U test_user -d test_watch_store -v  ON_ERROR_STOP=1 -f schema.sql
 
       - name: Test Seed Data Injection
         env:
           PGPASSWORD: test_password
         run: |
           echo "Testing seed data deployment..."
-          psql -h localhost -U test_user -d test_watch_store -v ON_ERROR_STOP=1 -f seed.sql
+          psql -h localhost -U test_user -d test_watch_store -v  ON_ERROR_STOP=1 -f seed.sql
   deploy:
       needs: test-migration
       runs-on: self-hosted
