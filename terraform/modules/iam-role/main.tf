@@ -72,7 +72,10 @@ resource "aws_iam_role_policy" "oidc_iam_custom_policy" {
          "iam:CreateRole",
          "iam:AttachRolePolicy",
          "iam:PutRolePolicy",
-         "iam:GetRole"
+         "iam:GetRole",
+         "iam:UpdateAssumeRolePolicy",   
+          "cloudformation:ListStacks",   
+          "eks:TagResource"
         ]
         Resource = "*"
       }
