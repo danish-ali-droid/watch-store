@@ -5,8 +5,8 @@ on:
     branches: [ main ]
     paths:
       - 'db/**'
-      - '.github/workflows/db-pipeline.yaml'
-
+      - '.github/workflows/database-pipeline.yaml'
+  workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults: 
       run:
-       working-directory:  db/
+       working-directory:  ./db
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults: 
       run:
-       working-directory:  db/
+       working-directory:  ./db
     services:
       postgres-test:
         image: postgres:16-alpine
