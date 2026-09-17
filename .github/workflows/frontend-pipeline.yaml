@@ -109,7 +109,10 @@ jobs:
              docker push ${{ secrets.DOCKERHUB_USERNAME }}/watch-store-frontend:latest
   deploy:
     needs: build-&-push
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    defaults: 
+      run:
+        working-directory: ./manifests
     steps:
       - name: checkout code
         uses: actions/checkout@v7
@@ -119,17 +122,26 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-north-1
-      - name: Create Zip Bundle for CodeDeploy
-        run: zip -r deployment.zip manifests/  scripts/ appspec.yml
-      - name: Upload Zip to S3
+      - name: Update Kubeconfig for EKS
         run: |
-          aws s3 cp deployment.zip s3://${{ secrets.AWS_S3_BUCKET }}/watch-store/deployment.zip
+          aws eks update-kubeconfig --name wach-store-eks-cluster --region eu-north-1
 
-      - name: Trigger CodeDeploy Deployment
+      - name: Deploy to EKS / Kubernetes   
         run: |
-          aws deploy create-deployment \
-            --application-name watch-app-code-deploy-app \
-            --deployment-group-name watch-store-deployment-group \
-            --s3-location bucket=${{ secrets.AWS_S3_BUCKET }},key=watch-store/deployment.zip,bundleType=zip
-
-      
+           SECRET_JSON=$(aws secretsmanager get-secret-value \
+            --secret-id "watch-store/postgres/credentials" \
+            --query SecretString \
+            --output text \
+            --region eu-north-1)
+           export DB_HOST=$(echo $SECRET_JSON | jq -r .DB_HOST)
+           export DB_PASSWORD=$(echo $SECRET_JSON | jq -r .DB_PASSWORD)
+           export SMTP_USER=$(echo $SECRET_JSON | jq -r .SMTP_USER)
+           export SMTP_PASS=$(echo $SECRET_JSON | jq -r .SMTP_PASS)
+           export PASSWORD_SALT=$(echo $SECRET_JSON | jq -r .PASSWORD_SALT)
+           
+           kubectl apply -f ns.yaml
+           kubectl apply -f watch-app-cm.yaml
+           kubectl apply -f watch-app-secret.yaml
+           kubectl apply -f frontend-deployment.yaml
+           kubectl rollout restart deployment/watch-store-frontend -n default || true
+  
