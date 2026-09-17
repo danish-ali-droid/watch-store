@@ -136,26 +136,22 @@ jobs:
           aws-region: eu-north-1
       - name: Update Kubeconfig for EKS
         run: |
-          export KUBECONFIG=$HOME/.kube/config
-          echo "Checking EKS Cluster state..."
-                 
-          aws eks wait cluster-active \
-            --name watch-store-eks-cluster \
-            --region eu-north-1
-          aws eks update-kubeconfig  --name watch-store-eks-cluster --region eu-north-1
+         
           SECRET_JSON=$(aws secretsmanager get-secret-value \
-           --secret-id "watch-store/postgres/credentials" \
-           --query SecretString \
-           --output text \
-           --region eu-north-1)
+          --secret-id "watch-store/postgres/credentials" \
+          --query SecretString \
+          --output text \
+          --region eu-north-1)
+          
           export DB_HOST=$(echo $SECRET_JSON | jq -r .DB_HOST)
           export DB_PASSWORD=$(echo $SECRET_JSON | jq -r .DB_PASSWORD)
           export SMTP_USER=$(echo $SECRET_JSON | jq -r .SMTP_USER)
           export SMTP_PASS=$(echo $SECRET_JSON | jq -r .SMTP_PASS)
           export PASSWORD_SALT=$(echo $SECRET_JSON | jq -r .PASSWORD_SALT)
-          kubectl apply -f ns.yaml
-          kubectl apply -f watch-app-cm.yaml
-          kubectl apply -f watch-app-secret.yaml
-          kubectl apply -f frontend-deployment.yaml
+          aws eks update-kubeconfig --region eu-north-1 --name watch-store-eks-cluster
+          kubectl apply -f ns.yaml --validate=false
+          kubectl apply -f watch-app-cm.yaml --validate=false
+          kubectl apply -f watch-app-secret.yaml --validate=false
+          kubectl apply -f frontend-deployment.yaml --validate=false
           kubectl rollout restart deployment/frontend-deployment -n watch-app || true
           

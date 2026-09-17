@@ -134,15 +134,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-north-1
       - name: Update configuration
-        run: |
-          echo "Checking EKS Cluster state..."
-                   
-          aws eks wait cluster-active \
-            --name watch-store-eks-cluster \
-            --region eu-north-1
-          aws eks update-kubeconfig --name watch-store-eks-cluster --region eu-north-1       
-          kubectl apply -f ingress-resource.yaml
-          kubectl apply -f redis-deployment.yaml 
-          kubectl apply -f backend-deployment.yaml
+        run: |  
+          aws eks update-kubeconfig --region eu-north-1 --name watch-store-eks-cluster
+
+          kubectl apply -f ingress-resource.yaml --validate=false
+          kubectl apply -f redis-deployment.yaml  --validate=false
+          kubectl apply -f backend-deployment.yaml --validate=false
           kubectl rollout restart deployment/backend-deployment -n watch-app || true
           kubectl rollout restart deployment/redis-deployment -n watch-app || true

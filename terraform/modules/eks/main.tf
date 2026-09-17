@@ -38,5 +38,15 @@ resource "aws_eks_fargate_profile" "watch-store-forgate-profile" {
     namespace =  var.ns
   }
 }
+# +++++++++++++++ Default Cluster Forgate Profile ++++++++++++++ 
+resource "aws_eks_fargate_profile" "kube_system" {
+  cluster_name           = aws_eks_cluster.watch-store-eks-cluster.name
+  fargate_profile_name   = "kube-system-fargate-profile"
+  pod_execution_role_arn = var.pod-execution-urn
+  subnet_ids             = var.subnet_ids
 
+  selector {
+    namespace = "kube-system"
+  }
+}
 
