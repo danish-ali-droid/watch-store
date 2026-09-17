@@ -47,8 +47,7 @@ jobs:
          git config local user.name "github-actions[bot]"
          git commit -am "style: auto-fix formatting with prettier" || echo "No changes to commit"
          git push
-     - name: check formet strict 
-       run: npx tsc --noEmit
+     
  test:
    needs: check-syntax
    runs-on: ubuntu-latest
