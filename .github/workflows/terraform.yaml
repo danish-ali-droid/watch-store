@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'terraform/**'
+      - '.github/workflows/terraform.yaml'
 concurrency: 
     group: terraform-deployment
     cancel-in-progress: true
@@ -14,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: terraform
+        working-directory: ./terraform
     env:
          
       TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
