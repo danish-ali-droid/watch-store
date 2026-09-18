@@ -4,7 +4,7 @@
 resource "aws_security_group" "watch-store-sg" {
   vpc_id = var.vpc-id
   name   = "watch-store-cluter-sg"
-
+  
   egress {
     from_port   = 0
     to_port     = 0
@@ -12,7 +12,20 @@ resource "aws_security_group" "watch-store-sg" {
     cidr_blocks = ["0.0.0.0/0"]
 
   }
+   ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "TCP"
+    security_groups = ["sg-0b1b0003bc97bc0e1", "sg-0e3b3556c8d197151"]
 
+  }
+  ingress {
+    from_port   = 4000
+    to_port     = 4000
+    protocol    = "TCP"
+    security_groups = ["sg-0b1b0003bc97bc0e1", "sg-0e3b3556c8d197151"]
+
+  }
   tags = {
     Name = "watch-store-sg"
   }
