@@ -115,6 +115,8 @@ jobs:
          - name: build and push to dockerhub
            uses: docker/build-push-action@v7
            with:
+             context: ./backend
+             file: ./backend/Dockerfile
              push: true
              tags: ${{secrets.DOCKERHUB_USERNAME}}/watch-store-backend:latest
  deploy:
