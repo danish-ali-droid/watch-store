@@ -145,8 +145,8 @@ jobs:
           export PASSWORD_SALT=$(echo $SECRET_JSON | jq -r .PASSWORD_SALT)
           aws eks update-kubeconfig --region eu-north-1 --name watch-store-eks-cluster
           kubectl apply -f ns.yaml --validate=false
-          kubectl apply -f watch-app-cm.yaml --validate=false
-          kubectl apply -f watch-app-secret.yaml --validate=false
+          envsubst < watch-app-cm.yaml | kubectl apply -f - --validate=false
+          envsubst < watch-app-secret.yaml | kubectl apply -f - --validate=false
           kubectl apply -f frontend-deployment.yaml --validate=false
           kubectl rollout restart deployment/frontend-deployment -n watch-app || true
           
