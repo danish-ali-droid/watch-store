@@ -18,7 +18,7 @@ console.log("DB CONFIG", {
 
 export const pool = new Pool({
   host: process.env.DB_HOST || "127.0.0.1",
-  user: process.env.DB_USER || "postgres",
+  user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "watch_store",
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
