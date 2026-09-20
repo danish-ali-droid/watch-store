@@ -5,6 +5,7 @@ metadata:
   namespace: watch-app
 data:
   DB_PORT: "5432"
+  DB_SSL: "true"
   DB_USER: "root"
   DB_NAME: "watch_store"
   PORT: "4000"

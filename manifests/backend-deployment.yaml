@@ -21,6 +21,9 @@ spec:
           image: dani334/watch-store-backend:latest 
           ports:
             - containerPort: 4000
+          env:
+            - name: DB_SSL
+              value: "true"
           envFrom:
             - configMapRef:
                 name: watch-app-cm 
