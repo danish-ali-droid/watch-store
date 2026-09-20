@@ -16,12 +16,17 @@ console.log("DB CONFIG", {
   DB_NAME: process.env.DB_NAME,
 });
 
+const dbHost = process.env.DB_HOST || "127.0.0.1";
+const useSsl =
+  process.env.DB_SSL === "true" || dbHost.endsWith(".rds.amazonaws.com");
+
 export const pool = new Pool({
-  host: process.env.DB_HOST || "127.0.0.1",
+  host: dbHost,
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "watch_store",
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
+  ssl: useSsl ? { rejectUnauthorized: false } : false,
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,

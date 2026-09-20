@@ -19,6 +19,7 @@ spec:
       containers:
         - name: backend-container
           image: dani334/watch-store-backend:latest 
+          imagePullPolicy: Always
           ports:
             - containerPort: 4000
           env:
