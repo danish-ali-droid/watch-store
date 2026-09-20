@@ -1,7 +1,9 @@
-import * as mariadb from "mariadb";
+import pkg from "pg";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+
+const { Pool } = pkg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,24 +16,23 @@ console.log("DB CONFIG", {
   DB_NAME: process.env.DB_NAME,
 });
 
-export const pool = mariadb.createPool({
+export const pool = new Pool({
   host: process.env.DB_HOST || "127.0.0.1",
-  user: process.env.DB_USER || "root",
+  user: process.env.DB_USER || "postgres",
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "watch_store",
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
-  connectionLimit: 10,
-  idleTimeout: 30000,
-  timezone: "local",
+  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
 });
 
 export async function query(sql, params = []) {
-  let conn;
   try {
-    conn = await pool.getConnection();
-    const rows = await conn.query(sql, params);
-    return rows;
-  } finally {
-    if (conn) conn.end();
+    const res = await pool.query(sql, params);
+    return res.rows;
+  } catch (err) {
+    console.error("Database query error:", err);
+    throw err;
   }
 }
