@@ -98,11 +98,11 @@ function hashPassword(password) {
 const WATCH_SELECT = `
   SELECT
     w.id,
-    w.name,
-    b.name            AS brand,
-    c.name            AS category,
-    m.name            AS movement,
-    cm.name           AS caseMaterial,
+    w.watch_name      AS name,
+    b.brand_name      AS brand,
+    c.category_name   AS category,
+    m.movement_name   AS movement,
+    cm.material_name  AS caseMaterial,
     w.price,
     w.original_price  AS originalPrice,
     w.primary_image   AS image,
@@ -140,8 +140,19 @@ async function hydrateWatches(watches) {
 
 // ── Helper: upsert a lookup value and return its id ──────────────────────────
 async function upsertLookup(table, name) {
-  await query(`INSERT IGNORE INTO ${table} (name) VALUES (?)`, [name]);
-  const [row] = await query(`SELECT id FROM ${table} WHERE name = ?`, [name]);
+  const nameColumn = {
+    brands: "brand_name",
+    categories: "category_name",
+    movements: "movement_name",
+    case_materials: "material_name",
+  }[table];
+  await query(
+    `INSERT INTO ${table} (${nameColumn}) VALUES (?) ON CONFLICT (${nameColumn}) DO NOTHING`,
+    [name],
+  );
+  const [row] = await query(`SELECT id FROM ${table} WHERE ${nameColumn} = ?`, [
+    name,
+  ]);
   return row.id;
 }
 
@@ -222,11 +233,11 @@ app.post("/api/products", upload.single("image"), async (req, res) => {
 
     const result = await query(
       `INSERT INTO watches
-         (name, brand_id, category_id, movement_id, case_material_id,
+         (watch_name, brand_id, category_id, movement_id, case_material_id,
           price, original_price, primary_image,
           water_resistance, warranty, case_size, description,
           stock, rating, reviews, featured, is_new)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         name,
         brandId,
@@ -307,7 +318,7 @@ app.put("/api/products/:id", upload.single("image"), async (req, res) => {
 
     await query(
       `UPDATE watches SET
-         name = ?, brand_id = ?, category_id = ?, movement_id = ?, case_material_id = ?,
+         watch_name = ?, brand_id = ?, category_id = ?, movement_id = ?, case_material_id = ?,
          price = ?, original_price = ?, primary_image = ?,
          water_resistance = ?, warranty = ?, case_size = ?, description = ?,
          stock = ?, rating = ?, reviews = ?, featured = ?, is_new = ?
@@ -418,7 +429,7 @@ app.post("/api/auth/register-verify", async (req, res) => {
 
     // Insert user (no phone/address/city on users table — they go to user_addresses)
     const result = await query(
-      "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
+      "INSERT INTO users (user_name, email, password_hash, user_role) VALUES (?, ?, ?, ?) RETURNING id",
       [name, email, hashedPassword, "user"],
     );
     const userId = result.insertId;
@@ -426,19 +437,19 @@ app.post("/api/auth/register-verify", async (req, res) => {
     // Insert default address if provided
     if (phone || address || city) {
       await query(
-        "INSERT INTO user_addresses (user_id, phone, address, city, is_default) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO user_addresses (user_id, phone, address, city, is_default) VALUES (?, ?, ?, ?, ?) RETURNING id",
         [userId, phone || "", address || "", city || "", true],
       );
     }
 
     const [newUser] = await query(
-      "SELECT id, name, email, role, created_at FROM users WHERE id = ?",
+      "SELECT id, user_name AS name, email, user_role AS role, created_at FROM users WHERE id = ?",
       [userId],
     );
 
     // Attach default address fields for the frontend User interface
     const [addr] = await query(
-      "SELECT phone, address, city FROM user_addresses WHERE user_id = ? AND is_default = 1 LIMIT 1",
+      "SELECT phone, address, city FROM user_addresses WHERE user_id = ? AND is_default = TRUE LIMIT 1",
       [userId],
     );
 
@@ -468,20 +479,27 @@ app.post("/api/auth/login", async (req, res) => {
     if (!user)
       return res.status(401).json({ error: "Invalid email or password." });
 
-    if (user.password !== hashPassword(password)) {
+    if (user.password_hash !== hashPassword(password)) {
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
-    const { password: _pw, ...cleanUser } = user;
+    const {
+      password_hash: _passwordHash,
+      user_name: userName,
+      user_role: userRole,
+      ...cleanUser
+    } = user;
 
     // Attach default address for the frontend User interface
     const [addr] = await query(
-      "SELECT phone, address, city FROM user_addresses WHERE user_id = ? AND is_default = 1 LIMIT 1",
+      "SELECT phone, address, city FROM user_addresses WHERE user_id = ? AND is_default = TRUE LIMIT 1",
       [user.id],
     );
 
     res.json({
       ...cleanUser,
+      name: userName,
+      role: userRole,
       phone: addr?.phone || "",
       address: addr?.address || "",
       city: addr?.city || "",
@@ -542,7 +560,7 @@ app.post("/api/auth/reset-password", async (req, res) => {
   }
 
   try {
-    await query("UPDATE users SET password = ? WHERE id = ?", [
+    await query("UPDATE users SET password_hash = ? WHERE id = ?", [
       hashPassword(newPassword),
       pending.userId,
     ]);
@@ -562,11 +580,11 @@ app.get("/api/users", async (req, res) => {
   try {
     const users = await query(
       `SELECT
-         u.id, u.name, u.email, u.role,
+         u.id, u.user_name AS name, u.email, u.user_role AS role,
          u.created_at  AS createdAt,
          ua.phone, ua.address, ua.city
        FROM users u
-       LEFT JOIN user_addresses ua ON ua.user_id = u.id AND ua.is_default = 1
+      LEFT JOIN user_addresses ua ON ua.user_id = u.id AND ua.is_default = TRUE
        ORDER BY u.id`,
     );
     res.json(users);
@@ -579,7 +597,10 @@ app.get("/api/users", async (req, res) => {
 app.delete("/api/users/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const [user] = await query("SELECT id, role FROM users WHERE id = ?", [id]);
+    const [user] = await query(
+      "SELECT id, user_role AS role FROM users WHERE id = ?",
+      [id],
+    );
     if (!user) return res.status(404).json({ error: "User not found." });
     if (user.role === "admin") {
       return res.status(400).json({ error: "Cannot delete an admin account." });
@@ -606,7 +627,7 @@ app.get("/api/orders", async (req, res) => {
       `SELECT
          o.id,
          o.user_id       AS userId,
-         u.name          AS userName,
+         u.user_name     AS userName,
          o.total,
          o.status,
          o.payment_method  AS paymentMethod,
@@ -630,8 +651,8 @@ app.get("/api/orders", async (req, res) => {
           `SELECT
              oi.quantity,
              oi.unit_price AS unitPrice,
-             w.id, w.name, w.primary_image AS image, w.price,
-             b.name AS brand
+             w.id, w.watch_name AS name, w.primary_image AS image, w.price,
+             b.brand_name AS brand
            FROM order_items oi
            JOIN watches w ON w.id = oi.watch_id
            JOIN brands  b ON b.id = w.brand_id
@@ -683,14 +704,14 @@ app.get("/api/orders/sales-report", async (req, res) => {
     const detailRows = await query(
       `SELECT
          DATE(o.created_at) AS saleDate,
-         w.name AS watchName,
+         w.watch_name AS watchName,
          oi.quantity,
          oi.unit_price AS unitPrice
        FROM orders o
        JOIN order_items oi ON oi.order_id = o.id
        JOIN watches w ON w.id = oi.watch_id
        WHERE o.status <> 'Cancelled'
-       ORDER BY saleDate DESC, w.name`,
+      ORDER BY saleDate DESC, w.watch_name`,
       [],
     );
 
@@ -822,7 +843,7 @@ app.post("/api/orders/verify", async (req, res) => {
       addressId = existingAddr[0].id;
     } else {
       const addrResult = await query(
-        "INSERT INTO user_addresses (user_id, phone, address, city, is_default) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO user_addresses (user_id, phone, address, city, is_default) VALUES (?, ?, ?, ?, ?) RETURNING id",
         [userId, phone, addressText, city, false],
       );
       addressId = addrResult.insertId;

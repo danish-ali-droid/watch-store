@@ -33,7 +33,7 @@ if (process.env.REDIS_URL) {
   });
   client.on('error', (error) => {
     redisReady = false;
-    console.warn('Redis unavailable; using MariaDB and in-memory fallback:', error.message);
+    console.warn('Redis unavailable; using in-memory fallback:', error.message);
   });
 
   client.connect().catch((error) => {

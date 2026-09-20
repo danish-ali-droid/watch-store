@@ -5,7 +5,7 @@ metadata:
   namespace: watch-app
 data:
   DB_PORT: "5432"
-  DB_USER: "postgres"
+  DB_USER: "root"
   DB_NAME: "watch_store"
   PORT: "4000"
   SMTP_HOST: "smtp.gmail.com"

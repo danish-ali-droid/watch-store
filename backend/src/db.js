@@ -29,8 +29,13 @@ export const pool = new Pool({
 
 export async function query(sql, params = []) {
   try {
-    const res = await pool.query(sql, params);
-    return res.rows;
+    let parameterIndex = 0;
+    const parameterizedSql = sql.replace(/\?/g, () => `$${++parameterIndex}`);
+    const res = await pool.query(parameterizedSql, params);
+    return Object.assign(res.rows, {
+      affectedRows: res.rowCount,
+      insertId: res.rows[0]?.id,
+    });
   } catch (err) {
     console.error("Database query error:", err);
     throw err;
