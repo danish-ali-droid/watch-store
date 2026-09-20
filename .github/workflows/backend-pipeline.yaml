@@ -118,7 +118,9 @@ jobs:
              context: ./backend
              file: ./backend/Dockerfile
              push: true
-             tags: ${{secrets.DOCKERHUB_USERNAME}}/watch-store-backend:latest
+             tags: |
+               ${{ secrets.DOCKERHUB_USERNAME }}/watch-store-backend:latest
+               ${{ secrets.DOCKERHUB_USERNAME }}/watch-store-backend:${{ github.sha }}
  deploy:
     needs: build-push
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
@@ -137,5 +139,8 @@ jobs:
           kubectl apply -f ingress-resource.yaml --validate=false
           kubectl apply -f redis-deployment.yaml  --validate=false
           kubectl apply -f backend-deployment.yaml --validate=false
-          kubectl rollout restart deployment/backend-deployment -n watch-app || true
+          kubectl set image deployment/backend-deployment \
+            backend-container=${{ secrets.DOCKERHUB_USERNAME }}/watch-store-backend:${{ github.sha }} \
+            -n watch-app
+          kubectl rollout status deployment/backend-deployment -n watch-app --timeout=180s
           kubectl rollout restart deployment/redis-deployment -n watch-app || true
